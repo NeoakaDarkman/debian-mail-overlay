@@ -1,22 +1,22 @@
-FROM debian:buster-slim
+FROM debian:12-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_CORES
 
-ARG SKALIBS_VER=2.8.1.0
-ARG EXECLINE_VER=2.5.1.0
-ARG S6_VER=2.8.0.1
-ARG RSPAMD_VER=1.9.4
-ARG GUCCI_VER=0.1.0
+ARG SKALIBS_VER=2.14.2.0
+ARG EXECLINE_VER=2.9.6.0
+ARG S6_VER=2.13.0.0
+ARG RSPAMD_VER=3.9.1
+ARG GUCCI_VER=1.6.13
 
-ARG SKALIBS_SHA256_HASH="431c6507b4a0f539b6463b4381b9b9153c86ad75fa3c6bfc9dc4722f00b166ba"
-ARG EXECLINE_SHA256_HASH="b1a756842947488404db8173bbae179d6e78b6ef551ec683acca540ecaf22677"
-ARG S6_SHA256_HASH="dbe08f5b76c15fa32a090779b88fb2de9a9a107c3ac8ce488931dd39aa1c31d8"
-ARG RSPAMD_SHA256_HASH="e4720c1f45defd07dd17b9563d0ddc480c70beadbc1a833235c077960092e030"
-ARG GUCCI_SHA256_HASH="44199d8edf88442324951cafeaaea047f524deb8d887a0174cacc3aaff139740"
+ARG SKALIBS_SHA256_HASH="ddfec5730e5b2f19d0381ecf7f796b39a6e473236bda0ad8d3776a3fe7b07e43"
+ARG EXECLINE_SHA256_HASH="ba2a27e97c5eb6bd7ca6a0987a8925e44465a5be996daa0d18f8feca37d7571a"
+ARG S6_SHA256_HASH="7e46f8f55d80bb0e2025a64d5d649af4a4ac21e348020caaadde30ba5e5b4830"
+ARG RSPAMD_SHA256_HASH="3c0e714389586b39def4fb809b0bff6436a1d605394ea3a591faff6e98b1ac2f"
+ARG GUCCI_SHA256_HASH="4695ed7b3ddb959e5116d85ab16558b4c6fed4e9ef2243c9da7807915b61d4ac"
 
 LABEL description="s6 + rspamd image based on Debian" \
-      maintainer="Hardware <contact@meshup.net>" \
+      maintainer="Neo.aka.Darkman <developer@fantasia-wmc.com>" \
       rspamd_version="Rspamd v$RSPAMD_VER built from source" \
       s6_version="s6 v$S6_VER built from source"
 
@@ -26,6 +26,7 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
     && BUILD_DEPS=" \
     cmake \
     gcc \
+	g++ \
     make \
     ragel \
     wget \
@@ -39,12 +40,13 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
     libssl-dev \
     libhyperscan-dev \
     libjemalloc-dev \
+	libsodium-dev \
     libmagic-dev" \
- && apt-get update && apt-get install -y -q --no-install-recommends \
+ && apt update && apt install -y -q --no-install-recommends \
     ${BUILD_DEPS} \
-    libevent-2.1-6 \
+    libevent-2.1-7 \
     libglib2.0-0 \
-    libssl1.1 \
+    libssl3 \
     libmagic1 \
     liblua5.1-0 \
     libluajit-5.1-2 \
@@ -56,7 +58,7 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
     ca-certificates \
     gnupg \
     dirmngr \
-    netcat \
+    netcat-traditional \
  && cd /tmp \
  && SKALIBS_TARBALL="skalibs-${SKALIBS_VER}.tar.gz" \
  && wget -q https://skarnet.org/software/skalibs/${SKALIBS_TARBALL} \
@@ -73,6 +75,7 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
  && tar xzf ${EXECLINE_TARBALL} && cd execline-${EXECLINE_VER} \
  && ./configure --prefix=/usr \
  && make && make install \
+ && ln -s /usr/lib/execline/libexecline.a /usr/lib/libexecline.a \
  && cd /tmp \
  && S6_TARBALL="s6-${S6_VER}.tar.gz" \
  && wget -q https://skarnet.org/software/s6/${S6_TARBALL} \
@@ -83,7 +86,7 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
  && make && make install \
  && cd /tmp \
  && RSPAMD_TARBALL="${RSPAMD_VER}.tar.gz" \
- && wget -q https://github.com/vstakhov/rspamd/archive/${RSPAMD_TARBALL} \
+ && wget -q https://github.com/rspamd/rspamd/archive/refs/tags/${RSPAMD_TARBALL} \
  && CHECKSUM=$(sha256sum ${RSPAMD_TARBALL} | awk '{print $1}') \
  && if [ "${CHECKSUM}" != "${RSPAMD_SHA256_HASH}" ]; then echo "${RSPAMD_TARBALL} : bad checksum" && exit 1; fi \
  && tar xzf ${RSPAMD_TARBALL} && cd rspamd-${RSPAMD_VER} \
@@ -114,7 +117,7 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
  && if [ "${CHECKSUM}" != "${GUCCI_SHA256_HASH}" ]; then echo "${GUCCI_BINARY} : bad checksum" && exit 1; fi \
  && chmod +x ${GUCCI_BINARY} \
  && mv ${GUCCI_BINARY} /usr/local/bin/gucci \
- && apt-get purge -y ${BUILD_DEPS} \
- && apt-get autoremove -y \
- && apt-get clean \
+ && apt purge -y ${BUILD_DEPS} \
+ && apt autoremove -y \
+ && apt clean \
  && rm -rf /tmp/* /var/lib/apt/lists/* /var/cache/debconf/*-old
