@@ -40,7 +40,7 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
     libssl-dev \
     libhyperscan-dev \
     libjemalloc-dev \
-	libsodium-dev \
+    libsodium-dev \
     libmagic-dev" \
  && apt update && apt install -y -q --no-install-recommends \
     ${BUILD_DEPS} \
@@ -53,6 +53,7 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
     libsqlite3-0 \
     libhyperscan5 \
     libjemalloc2 \
+    libarchive-dev \
     sqlite3 \
     openssl \
     ca-certificates \
@@ -112,7 +113,7 @@ RUN NB_CORES=${BUILD_CORES-$(getconf _NPROCESSORS_CONF)} \
  && make install \
  && cd /tmp \
  && GUCCI_BINARY="gucci-v${GUCCI_VER}-linux-amd64" \
- && wget -q https://github.com/noqcks/gucci/releases/download/${GUCCI_VER}/${GUCCI_BINARY} \
+ && wget -q https://github.com/noqcks/gucci/releases/download/v${GUCCI_VER}/${GUCCI_BINARY} \
  && CHECKSUM=$(sha256sum ${GUCCI_BINARY} | awk '{print $1}') \
  && if [ "${CHECKSUM}" != "${GUCCI_SHA256_HASH}" ]; then echo "${GUCCI_BINARY} : bad checksum" && exit 1; fi \
  && chmod +x ${GUCCI_BINARY} \
